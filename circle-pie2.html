@@ -1,0 +1,268 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>饼状图</title>
+</head>
+
+<style>
+
+    .label-text {
+        alignment-baseline: middle;
+        font-size: 12px;
+        font-family: arial,helvetica,"sans-serif";
+        fill: #393939;
+    }
+    .label-line {
+        stroke-width: 1;
+        stroke: #393939;
+    }
+    .label-circle {
+        fill: #393939;
+    }
+
+</style>
+
+<body>
+<svg>
+    <!--<div id="piechart"></div>-->
+
+    <g id="canvas">
+        <g id="art" />
+        <g id="labels" /></g>
+</svg>
+<script type="text/javascript" src="js/d3.v3.js"></script>
+<script type="text/javascript" src="js/jquery-1.10.1.js"></script>
+<script type="text/javascript">
+    var data =[{label: '搜狐视屏', value: 13},
+        {label: '搜狐视屏1', value: 13},
+        {label: '搜狐视屏2', value: 83},
+        {label: '搜狐视屏3', value: 83},
+        {label: '搜狐视屏4', value: 83},
+        {label: '百度', value: 360},
+        {label: '京东', value: 892},
+        {label: '王者荣耀', value: 342},
+        {label: '斗鱼', value: 504},
+        {label: 'PPLive', value: 602},
+        {label: '阿里云', value: 430},
+        {label: '凤凰卫视', value: 570},
+        {label: '酷狗', value: 100},
+        {label: 'QQ', value: 800},
+        {label: '今日头条', value: 600},
+        {label: '音悦台', value: 702},
+        {label: '淘宝', value: 964},
+        {label: '一号店', value: 1002},
+        {label: '爱奇艺', value: 102}
+    ];
+    svg = d3.select("svg");
+    canvas = d3.select("#canvas");
+    art = d3.select("#art");
+    labels = d3.select("#labels");
+
+    // Create the pie layout function.
+    // This function will add convenience
+    // data to our existing data, like
+    // the start angle and end angle
+    // for each data element.
+    pie = d3.layout.pie().sort(null)
+    pie.value(function (d, i) {
+        // Tells the layout function what
+        // property of our data object to
+        // use as the value.
+        return d.value;
+    });
+
+    // Store our chart dimensions
+    cDim = {
+        height: 600,
+        width: 600,
+        radius : Math.min(600, 600) / 2.5,
+        innerRadius: 50,
+        outerRadius: 150,
+        labelRadius: 175
+    }
+
+    // Set the size of our SVG element
+    svg.attr({
+        height: cDim.height,
+        width: cDim.width,
+        radius : Math.min(cDim.width, cDim.height) / 2.5
+    });
+
+    // This translate property moves the origin of the group's coordinate
+    // space to the center of the SVG element, saving us translating every
+    // coordinate individually.
+    canvas.attr("transform", "translate(" + (cDim.width / 2) + "," + (cDim.width / 2) + ")");
+
+    pieData = pie(data);
+
+    var arr = [];
+    //   创建计算弧形路径的函数
+    pieData.forEach(function (i, d) {
+        arr.push(i.value)
+    })
+    var maxArr = d3.max(arr);
+
+    // The arcs function we make here will calculate the path
+    // information for each wedge based on the data set. This is
+    // used in the "d" attribute.
+    arcs = d3.svg.arc()
+            /*.innerRadius(50)
+            .outerRadius(150);*/
+            .innerRadius(function (d,i) {
+//              console.log(d.value);
+                return 50;
+            }).outerRadius(function (d,i) {
+                return 150;
+            })
+
+
+    // This is an ordinal scale that returns 10 predefined colors.
+    // It is part of d3 core.
+    colors = d3.scale.category10();
+
+    // Let's start drawing the arcs.
+    enteringArcs = art.selectAll(".wedge").data(pieData).enter();
+
+    enteringArcs.append("path")
+            .attr("class", "wedge")
+            .attr("d", arcs)
+            .style("fill", function (d, i) {
+                return colors(i);
+            });
+
+    // Now we'll draw our label lines, etc.
+    enteringLabels = labels.selectAll(".label").data(pieData).enter();
+    labelGroups = enteringLabels.append("g").attr("class", "label");
+    labelGroups.append("circle").attr({
+        x: 0,
+        y: 0,
+        r: 2,
+        fill: "#000",
+        transform: function (d, i) {
+            centroid = arcs.centroid(d);
+            return "translate(" + arcs.centroid(d) + ")";
+        },
+        'class': "label-circle"
+    });
+
+    // "When am I ever going to use this?" I said in
+    // 10th grade trig.
+    textLines = labelGroups.append("path").attr(
+            "d", function(d,i){
+                var x0 = arcs.centroid(d)[0];
+                var y0 = arcs.centroid(d)[1];
+                var		centroid = arcs.centroid(d);
+                var      midAngle = Math.atan2(centroid[1], centroid[0]);
+                var      x1 = Math.cos(midAngle) * cDim.labelRadius;
+                var			centroid = arcs.centroid(d);
+                var				x2 =  x1 > 0 ? 150 : -150;
+                var      midAngle = Math.atan2(centroid[1], centroid[0]);
+                var       centroid = arcs.centroid(d);
+                var      midAngle = Math.atan2(centroid[1], centroid[0]);
+                var       y1 = Math.sin(midAngle) * cDim.labelRadius;
+                var      ret = [];
+                ret.push("M",x0,y0,"L",x1,y1,"L",x2,y1);
+                return ret.join(" ");
+            })
+            .style({
+                stroke:"#1C90F3",
+                fill:"none"
+            })
+
+
+
+    textLabels = labelGroups.append("text").attr({
+        x: function (d, i) {
+            centroid = arcs.centroid(d);
+            midAngle = Math.atan2(centroid[1], centroid[0]);
+            x = Math.cos(midAngle) * cDim.labelRadius;
+            //sign = (x > 0) ? 1 : -1
+            //labelX = x + (5 * sign)
+            //return labelX;
+            return x > 0 ? 150 : -150;
+        },
+        y: function (d, i) {
+            centroid = arcs.centroid(d);
+            midAngle = Math.atan2(centroid[1], centroid[0]);
+            y = Math.sin(midAngle) * cDim.labelRadius;
+            return y;
+        },
+        'text-anchor': function (d, i) {
+            centroid = arcs.centroid(d);
+            midAngle = Math.atan2(centroid[1], centroid[0]);
+            x = Math.cos(midAngle) * cDim.labelRadius;
+            return (x > 0) ? "start" : "end";
+        },
+        'class': 'label-text'
+    }).text(function (d) {
+        return d.data.label
+    });
+
+    alpha = 0.5;
+    spacing = 12;
+
+    function relax() {
+        again = false;
+        textLabels.each(function (d, i) {
+            a = this;
+            da = d3.select(a);
+            y1 = da.attr("y");
+            textLabels.each(function (d, j) {
+                b = this;
+                // a & b are the same element and don't collide.
+                if (a == b) return;
+                db = d3.select(b);
+                // a & b are on opposite sides of the chart and
+                // don't collide
+                if (da.attr("text-anchor") != db.attr("text-anchor")) return;
+                // Now let's calculate the distance between
+                // these elements.
+                y2 = db.attr("y");
+                deltaY = y1 - y2;
+
+                // Our spacing is greater than our specified spacing,
+                // so they don't collide.
+                if (Math.abs(deltaY) > spacing) return;
+
+                // If the labels collide, we'll push each
+                // of the two labels up and down a little bit.
+                again = true;
+                sign = deltaY > 0 ? 1 : -1;
+                adjust = sign * alpha;
+                da.attr("y",+y1 + adjust);
+                db.attr("y",+y2 - adjust);
+            });
+        });
+        // Adjust our line leaders here
+        // so that they follow the labels.
+        if(again) {
+            labelElements = textLabels[0];
+
+            textLines.attr(
+                    "d", function(d,i){
+                        var x0 = arcs.centroid(d)[0];
+                        var y0 = arcs.centroid(d)[1];
+                        var		centroid = arcs.centroid(d);
+                        var      midAngle = Math.atan2(centroid[1], centroid[0]);
+                        var      x1 = Math.cos(midAngle) * cDim.labelRadius;
+                        var			centroid = arcs.centroid(d);
+                        var				x2 =  x1 > 0 ? 150 : -150;
+                        var       y1 =labelForLine = d3.select(labelElements[i]).attr("y");
+                        var      ret = [];
+                        ret.push("M",x0,y0,"L",x1,y1,"L",x2,y1);
+                        return ret.join(" ");
+                    })
+//.attr("y2",function(d,i) {
+            //          labelForLine = d3.select(labelElements[i]);
+            //        return labelForLine.attr("y");
+            //  });
+            setTimeout(relax,20)
+        }
+    }
+
+    relax();
+</script>
+
+</body>
+
+</html>

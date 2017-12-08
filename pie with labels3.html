@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%;">
+ <head>
+ <meta charset="UTF-8">
+ <title>饼图</title>
+ <style>
+  .container {
+      margin: 0px auto;
+      padding: 10px;
+      width: 50%;
+      height: 50%;
+      border: 1px solid #000;
+      min-width: 400px;
+  }
+  polyline {
+  fill: none;
+  stroke: #000000;
+  stroke-width: 2px;
+  stroke-dasharray: 5px;
+  }
+ </style>
+ </head>
+ <body style="height: 100%;">
+ <div class="container">
+  <svg width="100%" height="100%"></svg>
+ </div>
+ <script type="text/javascript" src="js/d3.v3.js"></script>
+ <script type="text/javascript" src="js/jquery-1.10.1.js"></script>
+ <script>
+ 	
+  window.onload = function() {
+     var width=$('.container').width()
+     var height=$('.container').height();
+     var radius = Math.min(width, height) / 3;
+      var arcPoint= [];
+
+     d3.select('svg')
+      .attr("preserveAspectRatio", "xMidYMid meet")
+      .attr("viewBox", "0 0 "+width+" "+height )
+    	
+//   创建一个分组用来组合要画的图表元素
+  var main = d3.select('.container svg').append('g')
+     .classed('main', true)
+     .attr('transform', "translate(" + width/2 + ',' + height/2 + ')');
+//   模拟数据
+  var dataset = [
+       {name: 'A', value: 983},
+       {name: 'B', value: 500},
+       {name: 'C', value: 1430},
+       {name: 'D', value: 760},
+       {name: 'E', value: 780},
+       {name: 'F', value: 170},
+        {name: 'G', value: 800},
+       {name: 'H', value: 1402},
+       {name: 'I', value: 342},
+       {name: 'J', value: 1310},
+       {name: 'K', value: 200},
+      {name: 'L', value: 635},
+      {name: 'M', value: 211},
+      {name: 'N', value: 420},
+      {name: 'O', value: 588},
+      {name: 'P', value: 1352},
+      {name: 'Q', value: 830}
+  ];
+//   转换原始数据为能用于绘图的数据
+  var pie = d3.layout.pie()
+     .sort(null)
+     .value(function(d) {
+      return d.value;
+     });
+
+  // pie是一个函数
+  var arr=[];
+  var pieData = pie(dataset);
+//   创建计算弧形路径的函数
+  dataset.forEach(function(i,d){
+      arr.push(i.value)
+  })
+  var maxArr=d3.max(arr);
+  var minArr=d3.min(arr);
+      console.log(minArr, maxArr);
+  var arc = d3.svg.arc()
+   .innerRadius(function(d,i){
+       var aa = d.data.value;
+       if(aa>=maxArr*2/3){ //大于最大值的2/3.置为2/3的最大值
+           aa=maxArr*2/3;
+       }
+       if(aa<=maxArr*1/3){//小于最大值的1/3.置为1/3的最大值==》不在内圈
+           aa=maxArr*1/3;
+       }
+       var valuePer = aa/maxArr;
+       return radius*valuePer
+   })
+   .outerRadius(function(d){
+      var aa = d.data.value;
+       if(aa>=maxArr*2/3){
+           aa=maxArr*2/3;
+       }
+       if(aa<=maxArr*1/3){
+           aa=maxArr*1/3;
+       }
+       var valuePer = aa/maxArr;
+       return radius*(valuePer*1.4)
+
+   });
+
+  var outerArc = d3.svg.arc()
+     .innerRadius(1.2 * radius)
+     .outerRadius(1.2 * radius);
+
+   //线的
+  var oArc = d3.svg.arc()
+     .innerRadius(function(d,i){
+         var aa = d.data.value;
+         if(aa>=maxArr*2/3){
+             aa=maxArr*2/3;
+         }
+         if(aa<=maxArr*1/3){
+             aa=maxArr*1/3;
+         }
+         var valuePer = aa/maxArr;
+         return radius*(valuePer)
+     })
+    .outerRadius(function(d){
+       var aa = d.data.value;
+        if(aa>=maxArr*2/3){
+            aa=maxArr*2/3;
+        }
+        if(aa<=maxArr*1/3){
+            aa=maxArr*1/3;
+        }
+        var valuePer = aa/maxArr;
+        return radius*(valuePer*1.4)
+
+     });
+  
+  var slices = main.append('g').attr('class', 'slices');
+  var lines = main.append('g').attr('class', 'lines');
+  var labels = main.append('g').attr('class', 'labels');
+  var circles = main.append('g').attr('class', 'circles');
+  var out_circles = main.append('g').attr('class', 'out_circles');
+  // 添加弧形元素（g中的path）
+  var arcs = slices.selectAll('g')
+     .data(pieData)
+     .enter()
+     .append('path')
+     .attr('fill', function(d, i) {
+        return getColor(i);
+     })
+     .attr('d', function(d){
+        return arc(d);
+     });
+   
+   // 添加圈元素（g中的path）
+  var circleS = circles.selectAll('g')
+   .data(pieData)
+   .enter()
+   .append('circle')
+   .attr('cx',0)
+		.attr('cy',0)
+		.attr('r',function(i,d){
+			if(d<=4){
+				return d*(Math.min(width, height)/10)
+			}
+		})
+		.style({'fill':'none',
+		'stroke':'rgba(170, 170, 170, 0.5)',
+		'stroke-dasharray':'4, 4'
+		})
+		
+		 // 添加最外层圈元素（g中的path）
+     //最外层的2个圈
+    out_circles.append('circle')
+    .attr('class','bg-outer-circle')
+    .attr({'cx':'0',
+            'cy':'0',
+            'r':radius-2
+    })
+    .style({'stroke-width':'2px',
+    'fill':'none',
+    'stroke':'rgb(22,44,67)'
+    })
+
+    out_circles.append('circle')
+    .attr('class','bg-inner-circle')
+    .attr({'cx':'0',
+            'cy':'0',
+            'r':radius+2
+    })
+    .style({
+    'fill':'none',
+    'stroke':'rgb(22,44,67)'
+    })
+   
+  // 添加文字标签
+  var texts = labels.selectAll('text')
+       .data(pieData)
+       .enter()
+       .append('text')
+       .attr('dy', '0.35em')
+       .attr('fill', function(d, i) {
+            return getColor(i);
+       })
+       .text(function(d, i) {
+            return d.data.name;
+       })
+       .style('text-anchor', function(d, i) {
+            return midAngel(d)<Math.PI ? 'start' : 'end';
+       })
+       .attr('transform', function(d, i) {
+        // 找出外弧形的中心点
+            var pos = outerArc.centroid(d);
+        // 改变文字标识的x坐标
+            pos[0] = radius * (midAngel(d)<Math.PI ? 1.5 : -1.5);
+            return 'translate(' + pos + ')';
+       })
+       .style('opacity', 1);
+
+  var polylines = lines.selectAll('polyline')
+       .data(pieData)
+       .enter()
+       .append('polyline')
+       .attr('points', function(d) {
+           arcPoint.push(arc.centroid(d));
+            return [arc.centroid(d), arc.centroid(d), arc.centroid(d)];
+       })
+       .attr('points', function(d) {
+            var pos = outerArc.centroid(d);
+            pos[0] = radius * (midAngel(d)<Math.PI ? 1.5 : -1.5);
+            return [oArc.centroid(d), outerArc.centroid(d), pos];
+       })
+       .style('opacity', 0.5);
+      };
+      function midAngel(d) {
+            return d.startAngle + (d.endAngle - d.startAngle)/2;
+      }
+      function getColor(idx) {
+          var palette = [
+           '#2ec7c9', '#b6a2de', '#5ab1ef', '#ffb980', '#d87a80',
+           '#8d98b3', '#e5cf0d', '#97b552', '#95706d', '#dc69aa',
+           '#07a2a4', '#9a7fd1', '#588dd5', '#f5994e', '#c05050',
+           '#59678c', '#c9ab00', '#7eb00a', '#6f5553', '#c14089'
+          ]
+      return palette[idx % palette.length];
+      }
+ </script>
+ </body>
+</html>
